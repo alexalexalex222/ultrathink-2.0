@@ -5,6 +5,8 @@
 > AI's failure mode isn't "can't reason" — it's pattern completion bias.
 > These skills force investigation before reasoning, and reasoning before changes.
 
+![UltraThink 2.0 Architecture](ultrathink-2.0.png)
+
 ## Install (One Command)
 
 ```bash
