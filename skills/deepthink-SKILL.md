@@ -1,3 +1,8 @@
+---
+name: deepthink
+description: "Use when you need thorough sequential reasoning. Forces 11 reasoning techniques in order: meta-cognition, step-back, decomposition, tree of thought, first principles, analogical reasoning, chain of thought, devil's advocate, inversion, RAVEN loop, and recursive self-improvement."
+---
+
 # DEEPTHINK — Full Reasoning Protocol
 ### by @neuralwhisperer
 

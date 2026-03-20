@@ -1,3 +1,8 @@
+---
+name: diamondthink
+description: "Use for debugging, investigation, and any task that has previously failed. Enforces courtroom-standard evidence requirements: verbatim excerpts with line numbers, assumptions ledger with training-data flagging, murder board with competing hypotheses, chain-of-custody from source to runtime, and atomic single-fix changes."
+---
+
 # DiamondThink Protocol — Grand Jury Edition
 ### by @neuralwhisperer
 

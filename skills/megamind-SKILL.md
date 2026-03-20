@@ -1,3 +1,8 @@
+---
+name: megamind
+description: "Use for maximum reasoning depth on extreme complexity tasks. Spawns 10 angle-explorers (performance, simplicity, security, scalability, edge cases, devil's advocate, beginner's mind, future self, user perspective, constraint breaker), feeds outputs to 3 synthesizers (consensus, conflict, risk), then integrates into one final decision. Loops until confident."
+---
+
 # MEGAMIND — Ultra-Meta Reasoning Protocol
 ### by @neuralwhisperer
 

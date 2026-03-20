@@ -1,3 +1,8 @@
+---
+name: ultrathink-2
+description: "Use when tackling any complex task. Auto-classifies by complexity, stakes, and failure history, then routes to the optimal reasoning depth: Rapid Strike (quick), Deep Think (11 techniques), Ensemble (5-way parallel), Megamind (10→3→1 architecture), or Grand Jury (investigation). Supports parallel subprocess execution for context-efficient reasoning."
+---
+
 # UltraThink 2.0 — Unified Agentic Reasoning Engine
 ### by @neuralwhisperer
 
