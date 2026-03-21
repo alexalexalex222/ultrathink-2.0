@@ -291,7 +291,7 @@ Each sub-reasoner uses the FULL Deep Think technique stack.
 
 ```bash
 # PARALLEL EXECUTION — spawn 5 separate reasoning processes
-claude -p "ANGLE: PERFORMANCE. [problem + context]. Use full reasoning. Return: conclusion, confidence, key insight, concerns." > /tmp/ut2-angle1.md &
+claude -p "ANGLE: PERFORMANCE. [problem + context]. Use full reasoning. Return: reasoning summary (3-5 sentences with evidence), concrete recommendation with tradeoffs, confidence (1-10), key risks, and dissenting considerations." > /tmp/ut2-angle1.md &
 claude -p "ANGLE: SIMPLICITY. [problem + context]. ..." > /tmp/ut2-angle2.md &
 claude -p "ANGLE: SECURITY. [problem + context]. ..." > /tmp/ut2-angle3.md &
 claude -p "ANGLE: EDGE CASES. [problem + context]. ..." > /tmp/ut2-angle4.md &
@@ -374,7 +374,7 @@ Confidence: [N/10]
 ```bash
 # PARALLEL EXECUTION — 10 angle-explorers
 for i in 1 2 3 4 5 6 7 8 9 10; do
-  claude -p "ANGLE $i: [DIRECTIVE]. [problem + context]. Full reasoning. Return: conclusion, confidence, key insight, concerns." \
+  claude -p "ANGLE $i: [DIRECTIVE]. [problem + context]. Full reasoning. Return: reasoning summary (3-5 sentences with evidence), concrete recommendation with tradeoffs, confidence (1-10), key risks, dissenting considerations, and follow-up flag if confidence < 7." \
     --model opus > /tmp/ut2-mega-angle$i.md 2>/dev/null &
 done
 wait
@@ -599,7 +599,7 @@ For ENSEMBLE and MEGAMIND modes, use subprocess spawning to avoid context bloat.
 | In-context MEGAMIND | 50K+ tokens |
 | In-context DEEP THINK | 20K+ tokens |
 | In-context ENSEMBLE | 30K+ tokens |
-| **Subprocess (any)** | **~500 tokens** (just the output) |
+| **Subprocess (any)** | **500-1,500 tokens** (distilled output) |
 
 ### Subprocess Template
 
@@ -609,11 +609,13 @@ claude -p "[MODE]: [PROBLEM STATEMENT]
 CONTEXT:
 [paste relevant context, code, errors]
 
-RETURN FORMAT:
-1. Final answer/recommendation
-2. Confidence (1-10)
-3. Key risks or uncertainties
-4. One-line summary of reasoning process" \
+RETURN FORMAT (aim for 500-1500 tokens — preserve signal, not just conclusions):
+1. Reasoning summary (3-5 sentences explaining HOW you reached your conclusion, with specific evidence cited)
+2. Concrete recommendation with tradeoffs (what you'd do and what you'd sacrifice)
+3. Confidence (1-10) with calibration note
+4. Key risks or uncertainties (be specific — name files, functions, edge cases)
+5. Dissenting considerations (what a reasonable person might disagree with)
+6. Follow-up flag: does this need deeper investigation? (yes/no + why)" \
   --model opus \
   --dangerously-skip-permissions \
   2>/dev/null | tee /tmp/ut2-result.md
