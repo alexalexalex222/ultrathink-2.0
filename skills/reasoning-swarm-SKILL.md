@@ -1,6 +1,6 @@
 ---
 name: reasoning-swarm
-description: "Use when tackling any complex task. Adaptive parallel reasoning for Claude Code: auto-classifies by complexity, stakes, and failure history, then routes to Rapid Strike, Deep Think, Ensemble, Megamind, or Grand Jury. Supports context-efficient parallel subprocess execution, synthesis, and max-signal distillation."
+description: "Use when tackling any complex task. Adaptive parallel reasoning for Claude Code: auto-classifies by complexity, stakes, and failure history, then routes to Rapid Strike, Deep Think, Ensemble, Megamind, or Grand Jury. Supports context-efficient parallel subprocess execution and synthesis."
 ---
 
 # Reasoning Swarm for Claude Code
@@ -621,108 +621,6 @@ RETURN FORMAT (aim for 500-1500 tokens — preserve signal, not just conclusions
 
 > **Why 500-1500 instead of ~500?** At ~500 tokens the subprocess outputs were over-compressed — conclusions without reasoning traces, one-line insights that lost the "why." The synthesizer needs enough signal to detect genuine disagreements between angles, not just surface-level conclusion differences. 1500 tokens per subprocess × 10 angles = 15K tokens to the synthesizer, which is still 3x cheaper than in-context MEGAMIND (50K+).
 
-### DISTILLATION LAYER — Max-Signal Pack
-
-The goal is not to dump raw angle outputs back into the main session.
-The goal is to preserve the best reasoning while compressing token load.
-
-Use a distillation pass whenever:
-- 3+ subprocess outputs are in play
-- the main session is approaching context pressure
-- multiple angles agree on direction but differ on rationale
-- you need a portable handoff back into the main thread
-
-#### Distillation Objectives
-
-1. Preserve real disagreements, not just majority opinion
-2. Keep the final pack short enough for the main session to carry cheaply
-3. Preserve reasoning trace, not only conclusions
-4. Surface what is still uncertain
-5. Return one recommended path plus the strongest dissent
-
-#### Max-Signal Pack Schema
-
-```
-┌─ MAX-SIGNAL PACK ─────────────────────────────────────────────────┐
-│ PROBLEM: [one-sentence task statement]                            │
-│ RECOMMENDED PATH: [best action in 1-3 sentences]                 │
-│ WHY: [compressed reasoning trace]                                 │
-│                                                                   │
-│ AGREEMENTS:                                                       │
-│ - [what most angles agreed on]                                    │
-│ - [what most angles agreed on]                                    │
-│                                                                   │
-│ DISAGREEMENTS:                                                    │
-│ - [where angles diverged and why]                                 │
-│                                                                   │
-│ KEY RISKS:                                                        │
-│ - [top risk]                                                      │
-│ - [top risk]                                                      │
-│                                                                   │
-│ STRONGEST DISSENT: [best counterargument]                         │
-│ MISSING EVIDENCE: [what still needs verification]                 │
-│ CONFIDENCE: [1-10] with calibration note                          │
-│ NEXT ACTION: [exact next step]                                    │
-└───────────────────────────────────────────────────────────────────┘
-```
-
-#### Distillation Compression Rules
-
-- Compress repetitions aggressively
-- Never compress away a real disagreement
-- Keep one strongest supporting reason per major claim
-- Keep one strongest opposing reason if it survives
-- Prefer actionability over rhetoric
-- If two angles say the same thing, merge them
-- If one angle sees a catastrophic risk, preserve it even if minority
-
-#### Distillation Template
-
-```bash
-ALL_ANGLES=$(cat /tmp/ut2-angle*.md)
-
-claude -p "DISTILLATION TASK:
-You are a signal condenser. Distill the parallel reasoning below into one MAX-SIGNAL PACK for the main session.
-
-RULES:
-1. Preserve the best reasoning trace, not just conclusions.
-2. Preserve real disagreements and the strongest dissent.
-3. Remove repetition and low-signal fluff.
-4. Keep output compact enough for the main session to carry cheaply.
-5. Return: problem, recommended path, why, agreements, disagreements, key risks, strongest dissent, missing evidence, confidence, next action.
-
-INPUT:
-$ALL_ANGLES" \
-  --model opus \
-  --dangerously-skip-permissions \
-  2>/dev/null | tee /tmp/ut2-distilled-pack.md
-```
-
-#### When To Use Raw Synth vs Distilled Pack
-
-- Use raw synth when:
-  - the task is still highly ambiguous
-  - you want to inspect conflict in more detail
-  - the main session still has context room
-
-- Use distilled pack when:
-  - the main thread needs the answer, not every trace
-  - you need to preserve context budget
-  - you want a portable handoff between sessions
-  - the parallel lanes already produced enough signal
-
-#### Distillation Output
-
-```
-🧠 DISTILLATION COMPLETE
-Inputs Condensed: [N]
-Main Recommendation: [one line]
-Strongest Dissent Preserved: [yes/no]
-Confidence: [1-10]
----
-[MAX-SIGNAL PACK]
-```
-
 ### Parallel Multi-Mode Consensus
 
 For maximum confidence on critical decisions, run multiple modes simultaneously:
@@ -834,7 +732,6 @@ These are the ways AI tries to fake compliance. Reasoning Swarm blocks each one:
 /reasoning-swarm ensemble → force ENSEMBLE (5-way parallel)
 /reasoning-swarm mega     → force MEGAMIND (10→3→1)
 /reasoning-swarm jury     → force GRAND JURY (investigation)
-/reasoning-swarm distill  → condense parallel outputs into one MAX-SIGNAL PACK
 /reasoning-swarm max      → MEGAMIND + GRAND JURY combined
 /reasoning-swarm harder   → escalate current mode by one level
 
