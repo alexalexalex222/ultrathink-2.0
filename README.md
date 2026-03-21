@@ -1,22 +1,22 @@
-# UltraThink 2.0
+# Reasoning Swarm for Claude Code
 
-**Reasoning skills for Claude Code that actually make it think.**
+**Adaptive parallel reasoning skills for Claude Code.**
 
 > AI's failure mode isn't "can't reason" — it's pattern completion bias.
 > These skills force investigation before reasoning, and reasoning before changes.
 
-![UltraThink 2.0 Architecture](ultrathink-2.0.png)
+![Reasoning Swarm architecture](ultrathink-2.0.png)
 
 ## Install (One Command)
 
 ```bash
-# Creates .claude/skills/ and downloads UltraThink 2.0
-mkdir -p .claude/skills && curl -sL https://raw.githubusercontent.com/alexalexalex222/ultrathink-2.0/main/skills/ultrathink2-SKILL.md -o .claude/skills/ultrathink2-SKILL.md
+# Creates .claude/skills/ and downloads Reasoning Swarm
+mkdir -p .claude/skills && curl -sL https://raw.githubusercontent.com/alexalexalex222/reasoning-swarm/main/skills/reasoning-swarm-SKILL.md -o .claude/skills/reasoning-swarm-SKILL.md
 ```
 
 **Want all 4 skills?**
 ```bash
-mkdir -p .claude/skills && for f in ultrathink2-SKILL.md deepthink-SKILL.md megamind-SKILL.md diamondthink-SKILL.md; do curl -sL "https://raw.githubusercontent.com/alexalexalex222/ultrathink-2.0/main/skills/$f" -o ".claude/skills/$f"; done
+mkdir -p .claude/skills && for f in reasoning-swarm-SKILL.md ultrathink2-SKILL.md deepthink-SKILL.md megamind-SKILL.md diamondthink-SKILL.md; do curl -sL "https://raw.githubusercontent.com/alexalexalex222/reasoning-swarm/main/skills/$f" -o ".claude/skills/$f"; done
 ```
 
 That's it. Open Claude Code in your project and the skills are live.
@@ -31,13 +31,13 @@ Every AI coding assistant has the same failure loop:
 see familiar pattern → stop reading → predict from training data → patch → fail → repeat
 ```
 
-UltraThink breaks this loop by forcing structured reasoning *before* the model touches code.
+Reasoning Swarm breaks this loop by forcing structured reasoning *before* the model touches code.
 
 ---
 
 ## How It Works
 
-UltraThink auto-classifies any task and selects the right reasoning depth:
+Reasoning Swarm auto-classifies any task and selects the right reasoning depth:
 
 | Mode | When | Architecture |
 |------|------|-------------|
@@ -51,29 +51,34 @@ If confidence drops below threshold, it automatically escalates to the next mode
 
 ### Usage
 ```
-/ultrathink          → auto-select mode
-/ultrathink deep     → force 11-technique reasoning
-/ultrathink ensemble → force 5-way parallel
-/ultrathink mega     → force 10→3→1 architecture
-/ultrathink jury     → force investigation protocol
-/ultrathink max      → megamind + grand jury combined
+/reasoning-swarm          → auto-select mode
+/reasoning-swarm deep     → force 11-technique reasoning
+/reasoning-swarm ensemble → force 5-way parallel
+/reasoning-swarm mega     → force 10→3→1 architecture
+/reasoning-swarm jury     → force investigation protocol
+/reasoning-swarm max      → megamind + grand jury combined
+```
+
+Legacy alias still works:
+```text
+/ultrathink ...
 ```
 
 ---
 
 ## Context Management & Token Costs
 
-This is the real reason UltraThink exists in skill form instead of hardcoded prompts.
+This is the real reason Reasoning Swarm exists in skill form instead of hardcoded prompts.
 
 ### The Context Problem
 
 Claude Code has a finite context window. Heavy reasoning eats tokens fast. If you run Megamind (10 angle-explorers + 3 synthesizers) in-context, you've burned 50K+ tokens on reasoning alone — leaving less room for your actual codebase.
 
-### How UltraThink Solves It
+### How Reasoning Swarm Solves It
 
 **1. Adaptive depth = no wasted tokens**
 
-Most tasks don't need maximum reasoning. UltraThink's auto-classifier prevents you from burning 50K tokens on a task that only needs 2K. The matrix:
+Most tasks don't need maximum reasoning. Reasoning Swarm's auto-classifier prevents you from burning 50K tokens on a task that only needs 2K. The matrix:
 
 | Mode | Context Cost | When It's Used |
 |------|-------------|----------------|
@@ -85,7 +90,7 @@ Most tasks don't need maximum reasoning. UltraThink's auto-classifier prevents y
 
 **2. Parallel subprocess execution = reasoning without context cost**
 
-Instead of running 10 angle-explorers inside your main context (50K+ tokens), UltraThink spawns them as separate Claude processes via CLI:
+Instead of running 10 angle-explorers inside your main context (50K+ tokens), Reasoning Swarm spawns them as separate Claude processes via CLI:
 
 ```bash
 # 10 parallel reasoners, each in their own context
@@ -108,14 +113,14 @@ You get the same reasoning depth at 1/100th the context cost.
 
 **3. Confidence-gated escalation = efficient by default**
 
-UltraThink starts with the lightest mode that could work. It only escalates when confidence drops below 7. This means 80% of tasks resolve at Rapid Strike or Deep Think cost, and you only pay the full Megamind price when it's genuinely needed.
+Reasoning Swarm starts with the lightest mode that could work. It only escalates when confidence drops below 7. This means 80% of tasks resolve at Rapid Strike or Deep Think cost, and you only pay the full Megamind price when it's genuinely needed.
 
 ---
 
 ## Skills Included
 
-### 🧠 UltraThink 2.0 — The Unified Engine (732 lines)
-> [`skills/ultrathink2-SKILL.md`](skills/ultrathink2-SKILL.md)
+### 🧠 Reasoning Swarm — The Unified Engine (732 lines)
+> [`skills/reasoning-swarm-SKILL.md`](skills/reasoning-swarm-SKILL.md)
 
 The main skill. Auto-classifies, auto-selects depth, auto-escalates. Includes all modes, subprocess execution templates, confidence calibration, and anti-shortcut detection.
 
@@ -137,6 +142,9 @@ Courtroom-standard debugging: symptom lock → territory map → assumptions led
 ---
 
 ## 1,238 Lines Total
+
+Backwards compatibility:
+- `skills/ultrathink2-SKILL.md` still exists as the legacy install path.
 
 All MIT licensed. Use them, break them, improve them.
 

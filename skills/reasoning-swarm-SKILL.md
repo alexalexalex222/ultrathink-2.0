@@ -1,11 +1,9 @@
 ---
-name: ultrathink-2
-description: "Use when tackling any complex task. Auto-classifies by complexity, stakes, and failure history, then routes to the optimal reasoning depth: Rapid Strike (quick), Deep Think (11 techniques), Ensemble (5-way parallel), Megamind (10→3→1 architecture), or Grand Jury (investigation). Supports parallel subprocess execution for context-efficient reasoning."
+name: reasoning-swarm
+description: "Use when tackling any complex task. Adaptive parallel reasoning for Claude Code: auto-classifies by complexity, stakes, and failure history, then routes to Rapid Strike, Deep Think, Ensemble, Megamind, or Grand Jury. Supports context-efficient parallel subprocess execution and synthesis."
 ---
 
-> Legacy compatibility alias. Preferred public entrypoint: `skills/reasoning-swarm-SKILL.md`
-
-# UltraThink 2.0 — Unified Agentic Reasoning Engine
+# Reasoning Swarm for Claude Code
 ### by @neuralwhisperer
 
 **One skill to rule them all.**
@@ -687,7 +685,7 @@ Your confidence score must be honest. Here's how to calibrate:
 
 ## ANTI-SHORTCUT DETECTION
 
-These are the ways AI tries to fake compliance. UltraThink blocks each one:
+These are the ways AI tries to fake compliance. Reasoning Swarm blocks each one:
 
 | Shortcut | Tell | Blocker |
 |----------|------|---------|
@@ -705,7 +703,7 @@ These are the ways AI tries to fake compliance. UltraThink blocks each one:
 ## UNIFIED OUTPUT FORMAT
 
 ```
-🧠 ULTRATHINK 2.0 COMPLETE
+🧠 REASONING SWARM COMPLETE
 ╔═══════════════════════════════════════╗
 ║ Mode: [RAPID/DEEP/ENSEMBLE/MEGA/JURY]║
 ║ Escalations: [N]                      ║
@@ -724,16 +722,19 @@ These are the ways AI tries to fake compliance. UltraThink blocks each one:
 ## QUICK REFERENCE CARD
 
 ```
-/ultrathink          → auto-select mode based on task
-/ultrathink rapid    → force RAPID STRIKE
-/ultrathink deep     → force DEEP THINK (11 techniques)
-/ultrathink ensemble → force ENSEMBLE (5-way parallel)
-/ultrathink mega     → force MEGAMIND (10→3→1)
-/ultrathink jury     → force GRAND JURY (investigation)
-/ultrathink max      → MEGAMIND + GRAND JURY combined
-/ultrathink harder   → escalate current mode by one level
+/reasoning-swarm          → auto-select mode based on task
+/reasoning-swarm rapid    → force RAPID STRIKE
+/reasoning-swarm deep     → force DEEP THINK (11 techniques)
+/reasoning-swarm ensemble → force ENSEMBLE (5-way parallel)
+/reasoning-swarm mega     → force MEGAMIND (10→3→1)
+/reasoning-swarm jury     → force GRAND JURY (investigation)
+/reasoning-swarm max      → MEGAMIND + GRAND JURY combined
+/reasoning-swarm harder   → escalate current mode by one level
+
+Legacy alias:
+/ultrathink ...
 ```
 
 ---
 
-**ULTRATHINK 2.0 ACTIVATED. Beginning Phase 0: Intake Classification.**
+**REASONING SWARM ACTIVATED. Beginning Phase 0: Intake Classification.**
