@@ -117,6 +117,94 @@ Reasoning Swarm starts with the lightest mode that could work. It only escalates
 
 ---
 
+## Testing
+
+The project includes a comprehensive test suite across three categories. See [`docs/TEST_COVERAGE.md`](docs/TEST_COVERAGE.md) for the full test matrix and documentation.
+
+### Quick Start
+
+```bash
+# Unit tests (fast, no API keys needed)
+python -m pytest tests/test_intake_classifier.py tests/test_intake_classifier_edges.py tests/test_techniques.py tests/test_anti_shortcut.py -v
+
+# Benchmarks (medium speed, no API keys)
+python benchmarks/run.py
+
+# Full suite (unit + benchmarks, skips real agent tests)
+python -m pytest tests/ benchmarks/ -v --ignore=tests/test_real_*.py
+```
+
+### Real Agent Tests (requires API keys)
+
+```bash
+export REASONING_SWARM_API_URL="https://api.openai.com/v1"
+export REASONING_SWARM_MODEL="gpt-4o"
+export REASONING_SWARM_API_KEY="sk-..."
+
+python -m pytest tests/test_real_rapid_strike.py tests/test_real_deep_think.py tests/test_real_ensemble.py -v
+```
+
+### Test Categories
+
+| Category | Files | API Keys | Speed |
+|----------|-------|----------|-------|
+| Unit Tests | `tests/test_intake_classifier.py`, `tests/test_intake_classifier_edges.py`, `tests/test_techniques.py`, `tests/test_anti_shortcut.py` | No | Fast |
+| Benchmarks | `benchmarks/test_classifier_accuracy.py`, `benchmarks/test_deep_coverage.py`, `benchmarks/test_ensemble_parallel.py`, `benchmarks/test_megamind_quality.py`, `benchmarks/test_grand_jury_evidence.py`, `benchmarks/test_cross_mode_consistency.py` | No | Medium |
+| E2E / Real Agent | `tests/test_real_rapid_strike.py`, `tests/test_real_deep_think.py`, `tests/test_real_ensemble.py` | Yes | Slow |
+
+---
+
+## Quality Metrics
+
+| Metric | Target | Source |
+|--------|--------|--------|
+| Classifier Accuracy | >95% | `benchmarks/test_classifier_accuracy.py` |
+| Branch Coverage (`classify_task()`) | 100% | `pytest --cov` |
+| Deep Think Checkpoint Coverage | 11/11 | `benchmarks/test_deep_coverage.py` |
+| Expected Calibration Error (ECE) | <0.1 | `scoring/confidence_calibration.py` |
+| Ensemble Angle Diversity | 100% | `benchmarks/test_ensemble_parallel.py` |
+| Parallelism Efficiency (Ensemble) | <2.0x | `benchmarks/test_ensemble_parallel.py` |
+| Megamind Architecture Completeness | 100% | `benchmarks/test_megamind_quality.py` |
+| Grand Jury Phase Compliance | 100% | `benchmarks/test_grand_jury_evidence.py` |
+| Cross-Mode Consistency | 100% | `benchmarks/test_cross_mode_consistency.py` |
+| Anti-Shortcut Detection Rate | 100% | `tests/test_anti_shortcut.py` |
+| Rapid Strike Avg Latency | <30s | `tests/test_real_rapid_strike.py` |
+| Deep Think Avg Latency | <120s | `tests/test_real_deep_think.py` |
+
+### Confidence Calibration
+
+Confidence scores are validated against actual correctness using the Expected Calibration Error (ECE) metric. A well-calibrated system has ECE < 0.1 — meaning a confidence of 8/10 should be correct ~80% of the time.
+
+```bash
+python scoring/confidence_calibration.py
+python scoring/report.py --output docs/calibration_report.md
+```
+
+---
+
+## CI/CD
+
+### Continuous Integration (`.github/workflows/swarm-ci.yml`)
+
+Runs on every push to `main` and on all pull requests:
+
+1. **Unit tests** — intake classifier, techniques, anti-shortcut (fast, no API calls)
+2. **Benchmarks** — classifier accuracy, cross-mode consistency (medium speed)
+3. **E2E tests** — with mock agent (fast)
+4. **Test report artifact** — downloadable from CI run
+
+Real-agent tests are skipped in CI (they need API keys) but can be triggered manually via `workflow_dispatch`.
+
+### Nightly Runs (`.github/workflows/swarm-nightly.yml`)
+
+Runs daily at 2 AM UTC:
+
+1. **All real-agent tests** — Rapid Strike, Deep Think, Ensemble with live API calls
+2. **Quality scorers** — confidence calibration, calibration curve generation
+3. **Nightly report** — aggregate results saved as artifact
+
+---
+
 ## Skills Included
 
 ### 🧠 Reasoning Swarm — The Unified Engine (732 lines)
