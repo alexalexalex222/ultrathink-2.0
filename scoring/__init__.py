@@ -1,3 +1,11 @@
+from scoring.anti_shortcut_coverage import (
+    AntiShortcutScorer,
+    CoverageReport,
+    ReasoningTrace,
+    ShortcutDetection,
+    TraceResult,
+    detect_shortcuts,
+)
 from scoring.confidence_calibration import (
     CalibrationResult,
     ConfidenceCalibrator,
@@ -10,10 +18,16 @@ from scoring.cross_mode_agreement import (
 )
 
 __all__ = [
-    "CalibrationResult",
-    "ConfidenceCalibrator",
-    "ProblemResult",
     "AgreementResult",
-    "CrossModeAgreementScorer",
+    "AntiShortcutScorer",
+    "CalibrationResult",
     "ClaimExtractor",
+    "ConfidenceCalibrator",
+    "CoverageReport",
+    "CrossModeAgreementScorer",
+    "ProblemResult",
+    "ReasoningTrace",
+    "ShortcutDetection",
+    "TraceResult",
+    "detect_shortcuts",
 ]
