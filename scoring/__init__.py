@@ -16,6 +16,10 @@ from scoring.cross_mode_agreement import (
     CrossModeAgreementScorer,
     ClaimExtractor,
 )
+from scoring.trace_completeness import (
+    QualityReport,
+    score_trace,
+)
 
 __all__ = [
     "AgreementResult",
@@ -26,8 +30,10 @@ __all__ = [
     "CoverageReport",
     "CrossModeAgreementScorer",
     "ProblemResult",
+    "QualityReport",
     "ReasoningTrace",
     "ShortcutDetection",
     "TraceResult",
     "detect_shortcuts",
+    "score_trace",
 ]
