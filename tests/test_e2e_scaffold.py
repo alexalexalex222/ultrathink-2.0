@@ -53,6 +53,11 @@ class ReasoningTrace:
     subprocess_calls: int = 0
     raw_output: str = ""
     latency_ms: float = 0.0
+    # Megamind-specific fields
+    iterations: int = 1
+    agreement_level: str = ""
+    conflicts: list[str] = field(default_factory=list)
+    risks: list[str] = field(default_factory=list)
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -320,49 +325,99 @@ class ReasoningSwarmHarness:
         techniques_used: list[str] = []
         output_parts: list[str] = []
         subproc = 0
+        max_iterations = 3
 
-        # Phase M1 — initial Deep Think pass
+        # Phase M1 — initial Deep Think pass (runs once)
         output_parts.append("PHASE M1: Initial Deep Think Pass")
         for name, marker in DEEP_THINK_TECHNIQUES:
             output_parts.append(f"  {name}: {marker}")
             techniques_used.append(f"MEGA:M1:{name}")
 
-        # Phase M2 — 10 angle-explorers
-        output_parts.append("\nPHASE M2: 10 Angle-Explorers")
-        for angle in MEGAMIND_ANGLES:
-            content = self._mock_angle_output(angle, task)
-            output_parts.append(f"  ANGLE: {angle}\n  {content}")
-            techniques_used.append(f"MEGA:M2:{angle}")
-            subproc += 1
+        # Phases M2 → M3 → M4 iterate up to 3 times
+        conf = 0
+        all_conflicts: list[str] = []
+        all_risks: list[str] = []
+        agreement_level = ""
+        iteration = 0
 
-        # Phase M3 — 3 synthesizers
-        output_parts.append("\nPHASE M3: 3 Synthesizers")
-        for synth in MEGAMIND_SYNTHESIZERS:
+        for iteration in range(1, max_iterations + 1):
+            # Phase M2 — 10 angle-explorers
+            output_parts.append(f"\nPHASE M2: 10 Angle-Explorers (iteration {iteration})")
+            angle_confidences: list[int] = []
+            for angle in MEGAMIND_ANGLES:
+                content = self._mock_angle_output(angle, task)
+                output_parts.append(f"  ANGLE: {angle}\n  {content}")
+                tech_key = f"MEGA:M2:{angle}"
+                if tech_key not in techniques_used:
+                    techniques_used.append(tech_key)
+                angle_confidences.append(self._angle_confidence(angle))
+                subproc += 1
+
+            # Phase M3 — 3 synthesizers (each receives all 10 outputs)
+            output_parts.append(f"\nPHASE M3: 3 Synthesizers (iteration {iteration})")
+            for synth in MEGAMIND_SYNTHESIZERS:
+                output_parts.append(
+                    f"  SYNTHESIZER {synth}: Analysis from {synth} perspective "
+                    f"(processed {len(MEGAMIND_ANGLES)} angle outputs)"
+                )
+                tech_key = f"MEGA:M3:{synth}"
+                if tech_key not in techniques_used:
+                    techniques_used.append(tech_key)
+                subproc += 1
+
+            # Phase M4 — final synthesis with confidence gate
+            aligned = sum(1 for c in angle_confidences if c >= 7)
+            agreement_level = f"{aligned}/10"
+            conf = self._complexity_confidence(task)
+
+            conflicts = [
+                "Performance vs simplicity tradeoff on caching strategy",
+                "Security hardening conflicts with beginner-friendly UX",
+                "Scalability requirements exceed current infrastructure assumptions",
+            ]
+            risks = [
+                "Edge case handling under concurrent load",
+                "Regression risk in backward compatibility layer",
+                "Performance degradation at 10x scale",
+            ]
+            all_conflicts = conflicts
+            all_risks = risks
+
             output_parts.append(
-                f"  SYNTHESIZER {synth}: Analysis from {synth} perspective"
+                f"\nPHASE M4: Final Synthesis (iteration {iteration})\n"
+                f"  SYNTH A says: Strong consensus on core approach\n"
+                f"  SYNTH B says: Conflicts identified and analyzed\n"
+                f"  SYNTH C says: Risks assessed with mitigations\n"
+                f"  AGREEMENT LEVEL: {agreement_level} aligned\n"
+                f"  CONFLICTS RESOLVED: {'; '.join(all_conflicts)}\n"
+                f"  RISKS MITIGATED: {'; '.join(all_risks)}\n"
+                f"  CONFIDENCE: {conf}"
             )
-            techniques_used.append(f"MEGA:M3:{synth}")
-            subproc += 1
+            if "MEGA:M4:FINAL_SYNTHESIS" not in techniques_used:
+                techniques_used.append("MEGA:M4:FINAL_SYNTHESIS")
 
-        # Phase M4 — final synthesis
-        conf = self._complexity_confidence(task)
-        final = (
-            f"\nPHASE M4: Final Synthesis\n"
-            f"  SYNTH A says: Strong consensus on core approach\n"
-            f"  SYNTH B says: Minor conflicts on implementation strategy\n"
-            f"  SYNTH C says: Manageable risks with proper testing\n"
-            f"  CONFIDENCE: {conf}\n"
-            f"  → Output (conf >= 7)"
-        )
-        output_parts.append(final)
-        techniques_used.append("MEGA:M4:FINAL_SYNTHESIS")
+            if conf >= 7:
+                output_parts.append(f"  → Output (conf >= 7)")
+                break
+            elif iteration < max_iterations:
+                output_parts.append(
+                    f"  → Confidence {conf} < 7, looping back to Phase M2 "
+                    f"(iteration {iteration + 1})"
+                )
+            else:
+                output_parts.append(
+                    f"  → Max iterations ({max_iterations}) reached with "
+                    f"confidence {conf} < 7. Outputting with uncertainty flags."
+                )
 
         raw = "\n".join(output_parts)
         raw += (
             f"\n\n🧠 MEGAMIND COMPLETE\n"
             f"Architecture: 10 → 3 → 1\n"
-            f"Iterations: 1\n"
-            f"Agreement Level: 7/10 aligned\n"
+            f"Iterations: {iteration}\n"
+            f"Agreement Level: {agreement_level} aligned\n"
+            f"Conflicts Resolved: {'; '.join(all_conflicts)}\n"
+            f"Risks Mitigated: {'; '.join(all_risks)}\n"
             f"Final Confidence: {conf}"
         )
 
@@ -374,6 +429,10 @@ class ReasoningSwarmHarness:
             techniques_used=techniques_used,
             subprocess_calls=subproc,
             raw_output=raw,
+            iterations=iteration,
+            agreement_level=agreement_level,
+            conflicts=all_conflicts,
+            risks=all_risks,
         )
 
     # ── GRAND JURY ────────────────────────────────────────────────────────
