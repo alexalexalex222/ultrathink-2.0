@@ -1,4 +1,4 @@
-"""Entry point for `python -m cli.run_swarm`."""
+"""Entry point for `python -m cli`."""
 
 from cli.run_swarm import main
 

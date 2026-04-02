@@ -6,14 +6,20 @@ Usage:
     python -m cli.run_swarm 'design auth system' --mode mega --model opus
     python -m cli.run_swarm 'investigate crash' --mode jury --verbose
     python -m cli.run_swarm 'refactor parser' --output trace.md --format markdown
+
+When KILO_API_KEY (or KILOCODE_TOKEN) is set, the CLI executes the prompt
+against the LLM.  Otherwise it prints the constructed prompt for manual use.
 """
 
 from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 import time
+import urllib.error
+import urllib.request
 from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Optional
@@ -52,6 +58,7 @@ _CONFIDENCE_DEFAULTS = {
 @dataclass
 class SwarmResult:
     """Structured result of a reasoning swarm execution."""
+
     mode: str
     confidence: int
     skill_file: str
@@ -59,7 +66,74 @@ class SwarmResult:
     model: str = ""
     trace: str = ""
     elapsed_ms: float = 0.0
+    executed: bool = False
     metadata: dict = field(default_factory=dict)
+
+
+# ── LLM execution ──────────────────────────────────────────────────────────
+
+
+def _get_api_config() -> tuple[str, str, str]:
+    """Return (base_url, api_key, model) from environment."""
+    base_url = os.environ.get(
+        "KILO_OPENROUTER_BASE",
+        os.environ.get("KILO_API_URL", "https://api.kilo.ai"),
+    ).rstrip("/")
+    api_key = os.environ.get("KILO_API_KEY", os.environ.get("KILOCODE_TOKEN", ""))
+    model = os.environ.get("REASONING_SWARM_MODEL", "kilo/xiaomi/mimo-v2-pro:free")
+    return base_url, api_key, model
+
+
+def _call_llm(prompt: str, model: str = "", timeout: int = 300) -> str:
+    """Make a chat completion call to the Kilo API.
+
+    Returns the assistant message content string.
+    Raises RuntimeError on API or network errors.
+    """
+    base_url, api_key, default_model = _get_api_config()
+    if not api_key:
+        raise RuntimeError(
+            "No API key found. Set KILO_API_KEY or KILOCODE_TOKEN environment variable."
+        )
+
+    model = model or default_model
+    endpoint = f"{base_url}/api/chat/completions"
+
+    payload = json.dumps(
+        {
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "max_tokens": 4096,
+            "temperature": 0.7,
+        }
+    ).encode("utf-8")
+
+    req = urllib.request.Request(
+        endpoint,
+        data=payload,
+        headers={
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {api_key}",
+        },
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(req, timeout=timeout) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            return data["choices"][0]["message"]["content"]
+    except urllib.error.HTTPError as exc:
+        body = ""
+        try:
+            body = exc.read().decode("utf-8", errors="replace")
+        except Exception:
+            pass
+        raise RuntimeError(f"API error {exc.code}: {body}") from exc
+    except (urllib.error.URLError, KeyError, json.JSONDecodeError) as exc:
+        raise RuntimeError(f"LLM call failed: {exc}") from exc
+
+
+# ── Mode resolution ────────────────────────────────────────────────────────
 
 
 def resolve_mode(mode_arg: str, problem: str) -> str:
@@ -86,6 +160,9 @@ def _auto_classify(problem: str) -> str:
     return "ENSEMBLE"
 
 
+# ── Skill loading ──────────────────────────────────────────────────────────
+
+
 def load_skill(mode: str) -> str:
     """Load the skill file for the given canonical mode."""
     filename = _SKILL_FILES[mode]
@@ -100,6 +177,9 @@ def get_skill_filename(mode: str) -> str:
     return _SKILL_FILES[mode]
 
 
+# ── Prompt construction ────────────────────────────────────────────────────
+
+
 def construct_prompt(problem: str, mode: str, skill_content: str, model: str = "") -> str:
     """Build the full prompt combining skill instructions with the problem."""
     model_line = f"\nModel: {model}" if model else ""
@@ -108,6 +188,9 @@ def construct_prompt(problem: str, mode: str, skill_content: str, model: str = "
         f"## Task\n\n{problem}\n\n"
         f"## Skill Instructions\n\n{skill_content}\n"
     )
+
+
+# ── Output formatting ─────────────────────────────────────────────────────
 
 
 def format_output(result: SwarmResult, fmt: str, verbose: bool) -> str:
@@ -119,10 +202,12 @@ def format_output(result: SwarmResult, fmt: str, verbose: bool) -> str:
             "skill_file": result.skill_file,
             "model": result.model,
             "elapsed_ms": round(result.elapsed_ms, 2),
+            "executed": result.executed,
             "metadata": result.metadata,
         }
         if verbose:
             data["prompt"] = result.prompt
+        if result.trace:
             data["trace"] = result.trace
         return json.dumps(data, indent=2)
 
@@ -136,16 +221,19 @@ def format_output(result: SwarmResult, fmt: str, verbose: bool) -> str:
         if result.model:
             lines.append(f"**Model:** {result.model}")
         lines.append(f"**Elapsed:** {result.elapsed_ms:.0f}ms")
+        if result.executed:
+            lines.append(f"**Executed:** yes")
         lines.append("")
+        if result.trace:
+            lines.append("## Result")
+            lines.append("")
+            lines.append(result.trace)
+            lines.append("")
         if verbose:
             lines.append("## Prompt")
             lines.append("")
             lines.append(result.prompt)
             lines.append("")
-        if result.trace:
-            lines.append("## Trace")
-            lines.append("")
-            lines.append(result.trace)
         return "\n".join(lines)
 
     # text format (default)
@@ -157,15 +245,20 @@ def format_output(result: SwarmResult, fmt: str, verbose: bool) -> str:
     if result.model:
         parts.append(f"Model:      {result.model}")
     parts.append(f"Elapsed:    {result.elapsed_ms:.0f}ms")
-    if verbose:
+    if result.executed:
+        parts.append(f"Executed:   yes")
+    if result.trace:
+        parts.append("")
+        parts.append("─── Result ───")
+        parts.append(result.trace)
+    elif verbose:
         parts.append("")
         parts.append("─── Prompt ───")
         parts.append(result.prompt)
-    if result.trace:
-        parts.append("")
-        parts.append("─── Trace ───")
-        parts.append(result.trace)
     return "\n".join(parts)
+
+
+# ── Argument parsing ───────────────────────────────────────────────────────
 
 
 def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
@@ -173,6 +266,11 @@ def parse_args(argv: list[str] | None = None) -> argparse.Namespace:
         description="Run the Reasoning Swarm on a problem description",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
+Environment variables:
+  KILO_API_KEY              API key (or KILOCODE_TOKEN)
+  KILO_OPENROUTER_BASE      API base URL (default: https://api.kilo.ai)
+  REASONING_SWARM_MODEL     Default model (default: kilo/xiaomi/mimo-v2-pro:free)
+
 Examples:
   python -m cli.run_swarm 'fix the login bug' --mode deep
   python -m cli.run_swarm 'design auth system' --mode mega --model opus
@@ -217,7 +315,16 @@ Examples:
         choices=["json", "markdown", "text"],
         help="Output format (default: text)",
     )
+    parser.add_argument(
+        "--no-execute",
+        action="store_true",
+        default=False,
+        help="Skip LLM execution — only construct and display the prompt",
+    )
     return parser.parse_args(argv)
+
+
+# ── Main ───────────────────────────────────────────────────────────────────
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -230,20 +337,36 @@ def main(argv: list[str] | None = None) -> int:
     skill_file = get_skill_filename(mode)
     prompt = construct_prompt(args.problem, mode, skill_content, args.model)
 
-    elapsed = (time.perf_counter() - t0) * 1000
-
     result = SwarmResult(
         mode=mode,
         confidence=_CONFIDENCE_DEFAULTS[mode],
         skill_file=skill_file,
         prompt=prompt,
         model=args.model,
-        elapsed_ms=elapsed,
         metadata={
             "problem": args.problem,
             "mode_requested": args.mode,
         },
     )
+
+    # Execute against LLM unless --no-execute is set
+    _, api_key, default_model = _get_api_config()
+    should_execute = not args.no_execute and bool(api_key)
+
+    if should_execute:
+        try:
+            exec_model = args.model or default_model
+            result.model = exec_model
+            trace = _call_llm(prompt, model=args.model)
+            result.trace = trace
+            result.executed = True
+        except RuntimeError as exc:
+            print(f"Execution failed: {exc}", file=sys.stderr)
+            print("Falling back to prompt-only mode.", file=sys.stderr)
+            result.metadata["error"] = str(exc)
+
+    elapsed = (time.perf_counter() - t0) * 1000
+    result.elapsed_ms = elapsed
 
     formatted = format_output(result, args.format, args.verbose)
 
@@ -256,8 +379,12 @@ def main(argv: list[str] | None = None) -> int:
         print(formatted)
 
     if args.verbose and not args.output:
-        print(f"\n[mode={mode} | skill={skill_file} | confidence={result.confidence}/10]",
-              file=sys.stderr)
+        exec_status = "executed" if result.executed else "prompt-only"
+        print(
+            f"\n[mode={mode} | skill={skill_file} | "
+            f"confidence={result.confidence}/10 | {exec_status}]",
+            file=sys.stderr,
+        )
 
     return 0
 
